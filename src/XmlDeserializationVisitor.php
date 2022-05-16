@@ -315,16 +315,18 @@ final class XmlDeserializationVisitor extends AbstractVisitor implements NullAwa
         }
 
         if ($metadata->xmlAttribute) {
-            $attributes = $data->attributes($metadata->xmlNamespace);
-            if (isset($attributes[$name])) {
-                if (!$metadata->type) {
-                    throw RuntimeException::noMetadataForProperty($metadata->class, $metadata->name);
+            if( $data->getName() !== "") {
+                $attributes = $data->attributes($metadata->xmlNamespace);
+                if (isset($attributes[$name])) {
+                    if (!$metadata->type) {
+                        throw RuntimeException::noMetadataForProperty($metadata->class, $metadata->name);
+                    }
+
+                    return $this->navigator->accept($attributes[$name], $metadata->type);
                 }
 
-                return $this->navigator->accept($attributes[$name], $metadata->type);
+                throw new NotAcceptableException();
             }
-
-            throw new NotAcceptableException();
         }
 
         if ($metadata->xmlValue) {
@@ -353,7 +355,12 @@ final class XmlDeserializationVisitor extends AbstractVisitor implements NullAwa
         }
 
         if ($metadata->xmlNamespace) {
-            $node = $data->children($metadata->xmlNamespace)->$name;
+            if (empty($data->children($metadata->xmlNamespace)->$name)) {
+                $node = new \SimpleXMLElement("<body></body>");
+            }
+            else{
+                $node = $data->children($metadata->xmlNamespace)->$name;
+            }
             if (!$node->count()) {
                 throw new NotAcceptableException();
             }
