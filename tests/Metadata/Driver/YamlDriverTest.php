@@ -13,7 +13,7 @@ use JMS\Serializer\Tests\Fixtures\Person;
 use Metadata\Driver\DriverInterface;
 use Metadata\Driver\FileLocator;
 
-class YamlDriverTest extends BaseDriverTest
+class YamlDriverTest extends BaseDriverTestCase
 {
     public function testAccessorOrderIsInferred(): void
     {
@@ -103,6 +103,9 @@ class YamlDriverTest extends BaseDriverTest
         );
     }
 
+    /**
+     * @return YamlDriver
+     */
     protected function getDriver(?string $subDir = null, bool $addUnderscoreDir = true): DriverInterface
     {
         $dirs = [

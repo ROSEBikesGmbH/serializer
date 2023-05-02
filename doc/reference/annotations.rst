@@ -316,6 +316,7 @@ the object has been deserialized.
 ~~~~~~~~~~~~~~
 
 .. versionadded : 0.12
+
     @Discriminator was added
 
 This annotation allows serialization/deserialization of relations which are polymorphic, but
@@ -354,11 +355,19 @@ Available Types:
 +------------------------------------------------------------+--------------------------------------------------+
 | double or float                                            | Primitive double                                 |
 +------------------------------------------------------------+--------------------------------------------------+
-| double<2> or float<2>                                      | Primitive double with percision                  |
+| double<2> or float<2>                                      | Primitive double with precision                  |
 +------------------------------------------------------------+--------------------------------------------------+
-| double<2, 'HALF_DOWN'> or float<2, 'HALF_DOWN'>            | Primitive double with percision and              |
+| double<2, 'HALF_DOWN'> or float<2, 'HALF_DOWN'>            | Primitive double with precision and              |
 |                                                            | Rounding Mode.                                   |
 |                                                            | (HALF_UP, HALF_DOWN, HALF_EVEN HALF_ODD)         |
++------------------------------------------------------------+--------------------------------------------------+
+| double<2, 'HALF_DOWN', 2> or float<2, 'HALF_DOWN', 2>      | Primitive double with precision,                 |
+| double<2, 'HALF_DOWN', 3> or float<2, 'HALF_DOWN', 3>      | Rounding Mode and decimals padding up to         |
+|                                                            | N digits. As example, the float ``1.23456`` when |
+|                                                            | specified as  ``double<2, 'HALF_DOWN', 5>`` will |
+|                                                            | be serialized as ``1.23000``.                    |
+|                                                            | NOTE: this is available only for the XML         |
+|                                                            | serializer.                                      |
 +------------------------------------------------------------+--------------------------------------------------+
 | string                                                     | Primitive string                                 |
 +------------------------------------------------------------+--------------------------------------------------+
@@ -377,6 +386,22 @@ Available Types:
 | array<K, V>                                                | A map of keys of type K to values of type V.     |
 |                                                            | Examples: array<string, string>,                 |
 |                                                            | array<string, MyNamespace\MyObject>, etc.        |
++------------------------------------------------------------+--------------------------------------------------+
+| enum<'Color'>                                              | Enum of type Color, use its case values          |
+|                                                            | for serialization and deserialization            |
+|                                                            | if the enum is a backed enum,                    |
+|                                                            | use its case names if it is not a backed enum.   |
++------------------------------------------------------------+--------------------------------------------------+
+| enum<'Color', 'name'>                                      | Enum of type Color, use its case names           |
+|                                                            | (as string) for serialization                    |
+|                                                            | and deserialization.                             |
++------------------------------------------------------------+--------------------------------------------------+
+| enum<'Color', 'value'>                                     | Backed Enum of type Color, use its case value    |
+|                                                            | for serialization and deserialization.           |
++------------------------------------------------------------+--------------------------------------------------+
+| enum<'Color', 'value', 'integer'>                          | Backed Enum of type Color, use its case value    |
+|                                                            | (forced as integer) for serialization            |
+|                                                            | and deserialization.                             |
 +------------------------------------------------------------+--------------------------------------------------+
 | DateTime                                                   | PHP's DateTime object (default format*/timezone) |
 +------------------------------------------------------------+--------------------------------------------------+
@@ -406,20 +431,28 @@ Available Types:
 |                                                            | string (''). DeserializeFormats can either be a  |
 |                                                            | string or an array of string.                    |
 +------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface                                          | PHP's DateTimeImmutable object (default format*/ |
-|                                                            | timezone).                                       |
+| DateTimeInterface                                          | PHP's DateTimeInterface interface (default       |
+|                                                            | format*/timezone).                               |
+|                                                            | Data will be always deserialised into            |
+|                                                            | `\DateTime` object                               |
 +------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface<'format'>                                | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | default timezone)                                |
+| DateTimeInterface<'format'>                                | PHP's DateTimeInterface interface (custom        |
+|                                                            | format/default timezone)                         |
+|                                                            | Data will be deserialised into                   |
+|                                                            | `\\DateTime` object                              |
 +------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface<'format', 'zone'>                        | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | timezone)                                        |
+| DateTimeInterface<'format', 'zone'>                        | PHP's DateTimeInterface interface (custom        |
+|                                                            | format/timezone)                                 |
+|                                                            | Data will be deserialised into                   |
+|                                                            | `\\DateTime` object                              |
 +------------------------------------------------------------+--------------------------------------------------+
-| DateTimeInterface<'format', 'zone', 'deserializeFormats'>  | PHP's DateTimeImmutable object (custom format/   |
-|                                                            | timezone/deserialize format). If you do not want |
-|                                                            | to specify a specific timezone, use an empty     |
-|                                                            | string (''). DeserializeFormats can either be a  |
-|                                                            | string or an array of string.                    |
+| DateTimeInterface<'format', 'zone', 'deserializeFormats'>  | PHP's DateTimeInterface interface (custom        |
+|                                                            | format/timezone/deserialize format). If you do   |
+|                                                            | not want to specify a specific timezone, use an  |
+|                                                            | empty string (''). DeserializeFormats can either |
+|                                                            | be a string or an array of string.               |
+|                                                            | Data will be deserialised into                   |
+|                                                            | `\\DateTime` object                              |
 +------------------------------------------------------------+--------------------------------------------------+
 | DateInterval                                               | PHP's DateInterval object using ISO 8601 format  |
 +------------------------------------------------------------+--------------------------------------------------+
@@ -870,7 +903,7 @@ Resulting XML:
 
 
 PHP 8 support
--------------
+~~~~~~~~~~~~~
 
 JMS serializer now supports PHP 8 attributes, with a few caveats:
 - Due to the missing support for nested annotations, the syntax for a few annotations has changed
@@ -917,3 +950,23 @@ Example:
             return 1;
         }
     ...
+
+Enum support
+~~~~~~~~~~~~
+
+Enum support is disabled by default, to enable it run:
+
+.. code-block :: php
+
+    $builder = SerializerBuilder::create();
+    $builder->enableEnumSupport();
+
+    $serializer = $builder->build();
+
+
+With the enum support enabled, enums are automatically detected using typed properties typehints.
+When typed properties are no available (virtual properties as example), it is necessary to explicitly typehint
+the underlying type using the ``@Type`` annotation.
+
+- If the enum is a ``BackedEnum``, the case value will be used for serialization and deserialization by default;
+- If the enum is not a ``BackedEnum``, the case name will be used for serialization and deserialization by default;
