@@ -136,7 +136,7 @@ final class SerializerBuilder
     private $cacheDir;
 
     /**
-     * @var AnnotationReader
+     * @var Reader
      */
     private $annotationReader;
 
@@ -497,7 +497,7 @@ final class SerializerBuilder
             $this->serializationContextFactory = $serializationContextFactory;
         } elseif (is_callable($serializationContextFactory)) {
             $this->serializationContextFactory = new CallableSerializationContextFactory(
-                $serializationContextFactory
+                $serializationContextFactory,
             );
         } else {
             throw new InvalidArgumentException('expected SerializationContextFactoryInterface or callable.');
@@ -515,7 +515,7 @@ final class SerializerBuilder
             $this->deserializationContextFactory = $deserializationContextFactory;
         } elseif (is_callable($deserializationContextFactory)) {
             $this->deserializationContextFactory = new CallableDeserializationContextFactory(
-                $deserializationContextFactory
+                $deserializationContextFactory,
             );
         } else {
             throw new InvalidArgumentException('expected DeserializationContextFactoryInterface or callable.');
@@ -524,13 +524,15 @@ final class SerializerBuilder
         return $this;
     }
 
-    public function enableEnumSupport(bool $enableEnumSupport = true): void
+    public function enableEnumSupport(bool $enableEnumSupport = true): self
     {
         if ($enableEnumSupport && PHP_VERSION_ID < 80100) {
             throw new InvalidArgumentException('Enum support can be enabled only on PHP 8.1 or higher.');
         }
 
         $this->enableEnumSupport = $enableEnumSupport;
+
+        return $this;
     }
 
     public function setMetadataCache(CacheInterface $cache): self
@@ -550,9 +552,8 @@ final class SerializerBuilder
     public function build(): Serializer
     {
         $annotationReader = $this->annotationReader;
-        if (null === $annotationReader) {
-            $annotationReader = new AnnotationReader();
-            $annotationReader = $this->decorateAnnotationReader($annotationReader);
+        if (null === $annotationReader && class_exists(AnnotationReader::class)) {
+            $annotationReader = $this->decorateAnnotationReader(new AnnotationReader());
         }
 
         if (null === $this->driverFactory) {
@@ -560,7 +561,7 @@ final class SerializerBuilder
             $this->driverFactory = new DefaultDriverFactory(
                 $this->propertyNamingStrategy,
                 $this->typeParser,
-                $this->expressionEvaluator instanceof CompilableExpressionEvaluatorInterface ? $this->expressionEvaluator : null
+                $this->expressionEvaluator instanceof CompilableExpressionEvaluatorInterface ? $this->expressionEvaluator : null,
             );
             $this->driverFactory->enableEnumSupport($this->enableEnumSupport);
         }
@@ -609,7 +610,7 @@ final class SerializerBuilder
             $this->deserializationVisitors,
             $this->serializationContextFactory,
             $this->deserializationContextFactory,
-            $this->typeParser
+            $this->typeParser,
         );
     }
 
@@ -620,7 +621,7 @@ final class SerializerBuilder
             $this->handlerRegistry,
             $this->getAccessorStrategy(),
             $this->eventDispatcher,
-            $this->expressionEvaluator
+            $this->expressionEvaluator,
         );
     }
 
@@ -632,7 +633,7 @@ final class SerializerBuilder
             $this->objectConstructor ?: new UnserializeObjectConstructor(),
             $this->getAccessorStrategy(),
             $this->eventDispatcher,
-            $this->expressionEvaluator
+            $this->expressionEvaluator,
         );
     }
 
